@@ -4,9 +4,12 @@ from aiogram import types, Dispatcher, Bot
 
 class KeyboardHandler:
     btn_weather = KeyboardButton('☀Погода')
+    btn_currency = KeyboardButton('💱Курсы валют')
+    btn_watermark = KeyboardButton('💧Нанести водяной знак')
+
     btn_weather_simple = KeyboardButton('🌡Температура воздуха')
     btn_weather_with_sun = KeyboardButton('☔🌢🌅Полная информация')
-    btn_currency = KeyboardButton('💱Курсы валют')
+
     bt_location = KeyboardButton('Ваше расположение', request_location=True)
     btn_kiev = KeyboardButton('🌃Киев')
     btn_other_city = KeyboardButton('🏞Выберите населенный пункт')
@@ -15,7 +18,7 @@ class KeyboardHandler:
     kb_client = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     location_client = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 
-    kb_client.add(btn_weather).add(btn_currency)
+    kb_client.add(btn_weather).add(btn_currency).add(btn_watermark)
     weather_client.add(btn_weather_simple, btn_weather_with_sun)
     location_client.row(btn_kiev, btn_other_city, bt_location)
 

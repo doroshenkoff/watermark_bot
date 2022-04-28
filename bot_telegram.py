@@ -31,6 +31,8 @@ weather_params = WeatherHandler()
 
 class FSMStates(StatesGroup):
     city = State()
+    watermark_word = State()
+    image_for_watermark = State()
 
 
 async def on_startup(_):
@@ -105,6 +107,11 @@ async def handle_location(message: types.Message):
 @dp.message_handler(regexp='💱Курсы валют')
 async def show_currency(msg: types.Message):
     await msg.reply(currency_foreign(), reply_markup=KeyboardHandler.kb_client)
+
+
+@dp.message_handler(regexp='💧Нанести водяной знак')
+async def make_watermark(msg: types.Message):
+    await msg.reply('Сервис еще находится в разработке')
 
 
 @dp.message_handler()
