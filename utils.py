@@ -1,6 +1,6 @@
 import requests
 import constants
-import pytz
+import googlemaps
 from datetime import datetime
 
 
@@ -18,12 +18,16 @@ def format_time(time: int):
 def weather(params: WeatherHandler, sun=False):
 
     if params.lat is None:
-        geo_payload = {
-            'q': params.city,
-            'appid': constants.WEATHER_TOKEN
-        }
-        geo_responce = requests.get('http://api.openweathermap.org/geo/1.0/direct', geo_payload).json()[0]
-        lat, lon = geo_responce['lat'], geo_responce['lon']
+        gmaps = googlemaps.Client(constants.GOOGLE_API_KEY)
+        loc = gmaps.geocode(params.city)[0]['geometry']['location']
+        # geo_payload = {
+        #     'q': params.city,
+        #     'appid': constants.WEATHER_TOKEN
+        # }
+        # geo_responce = requests.get('http://api.openweathermap.org/geo/1.0/direct', geo_payload).json()[0]
+        lat, lon = loc['lat'], loc['lng']
+
+
     else:
         lat, lon = params.lat, params.lon
 
@@ -81,4 +85,6 @@ def currency_foreign():
 
 
 if __name__ == '__main__':
-    print(currency_foreign())
+    wh = WeatherHandler()
+    wh.city = 'Выжница'
+    print(weather(wh, True))

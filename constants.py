@@ -23,6 +23,8 @@ ANSWER_FOR_BAD_WORDS = [
 
 WEATHER_TOKEN = 'ee3c0ec7b77535a9bdc63afaa12ec4dc'
 
+GOOGLE_API_KEY = 'AIzaSyCAGhFNKlXN8dV5VMc6T37IDrC4nuyiWlc'
+
 WEATHER_ICONS = {
     'пасмурно': ''
 }

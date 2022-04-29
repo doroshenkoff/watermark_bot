@@ -13,10 +13,9 @@ from utils import WeatherHandler, currency_foreign
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-
 from keyboard import KeyboardHandler
-
-
+from datetime import datetime
+from watermark import create_watermark
 
 logging.basicConfig(level=logging.INFO)
 
@@ -28,11 +27,16 @@ dp.middleware.setup(LoggingMiddleware())
 
 weather_params = WeatherHandler()
 
+params = {
+    'back': KeyboardHandler.kb_client
+}
+
 
 class FSMStates(StatesGroup):
     city = State()
-    watermark_word = State()
     image_for_watermark = State()
+    watermark_word = State()
+
 
 
 async def on_startup(_):
@@ -40,14 +44,15 @@ async def on_startup(_):
 
 
 def check_words(fn):
-    async def inner(msg: types.Message, *args, **kwargs):
+    async def inner(msg: types.Message, state: FSMContext, *args, **kwargs):
         if any(word in msg.text.lower().
                 translate(str.maketrans('', '', string.punctuation)) for word in constants.BAD_WORDS):
             await msg.reply(choice(constants.ANSWER_FOR_BAD_WORDS))
+            await state.finish()
             sleep(3)
             await msg.delete()
         else:
-            await fn(msg, *args, **kwargs)
+            await fn(msg, state, *args, **kwargs)
     return inner
 
 
@@ -97,6 +102,40 @@ async def input_city(msg: types.Message, state: FSMContext):
     await state.finish()
 
 
+#     **********************************************
+@dp.message_handler(regexp='💧Нанести водяной знак')
+async def make_watermark(msg: types.Message):
+    await FSMStates.image_for_watermark.set()
+    await msg.reply('Выберите картинку', reply_markup=KeyboardHandler.undo_client)
+
+
+@dp.message_handler(content_types=['photo'], state=FSMStates.image_for_watermark)
+async def input_photo(msg: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        now = datetime.now()
+        name = f'static/photos/img-{now.year}-{now.month}-{now.day}--{now.hour}-{now.minute}.jpg'
+        await msg.photo[-1].download(name)
+        data['image_for_watermark'] = name
+        await FSMStates.next()
+        await msg.reply('Теперь введите текст для водяного знака (не больше 20 символов')
+
+
+@dp.message_handler(state=FSMStates.watermark_word)
+@check_words
+async def input_text(msg: types.Message, state: FSMContext, *args, **kwargs):
+    async with state.proxy() as data:
+        if len(msg.text) > 20:
+            await msg.reply('Длина строки больше 20 символов, введти другой текст')
+            await FSMStates.watermark_word.state
+        else:
+            data['watermark_word'] = msg.text
+            await msg.reply('Ваши данные приняты, ожидайте картинку', reply_markup=KeyboardHandler.kb_client)
+            await bot.send_photo(msg.from_user.id, create_watermark(data["image_for_watermark"], data["watermark_word"]))
+        await state.finish()
+
+#    ******************************************************************************
+
+
 @dp.message_handler(content_types=['location'])
 async def handle_location(message: types.Message):
     weather_params.lat = message.location.latitude
@@ -109,9 +148,15 @@ async def show_currency(msg: types.Message):
     await msg.reply(currency_foreign(), reply_markup=KeyboardHandler.kb_client)
 
 
-@dp.message_handler(regexp='💧Нанести водяной знак')
-async def make_watermark(msg: types.Message):
-    await msg.reply('Сервис еще находится в разработке')
+@dp.message_handler(regexp='⏪Назад')
+async def step_back(msg: types.Message):
+    await msg.reply('Переходим в прошлое меню', reply_markup=params['back'])
+
+
+@dp.message_handler(regexp='☠Отменить')
+async def step_back(msg: types.Message, state: FSMContext):
+    await state.finish()
+    await msg.reply('Отменяем...', reply_markup=KeyboardHandler.kb_client)
 
 
 @dp.message_handler()

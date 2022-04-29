@@ -9,6 +9,9 @@ class KeyboardHandler:
 
     btn_weather_simple = KeyboardButton('🌡Температура воздуха')
     btn_weather_with_sun = KeyboardButton('☔🌢🌅Полная информация')
+    btn_back = KeyboardButton('⏪Назад')
+
+    btn_undo = KeyboardButton('☠Отменить')
 
     bt_location = KeyboardButton('Ваше расположение', request_location=True)
     btn_kiev = KeyboardButton('🌃Киев')
@@ -17,9 +20,11 @@ class KeyboardHandler:
     weather_client = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     kb_client = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     location_client = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    undo_client = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
 
     kb_client.add(btn_weather).add(btn_currency).add(btn_watermark)
-    weather_client.add(btn_weather_simple, btn_weather_with_sun)
-    location_client.row(btn_kiev, btn_other_city, bt_location)
+    weather_client.add(btn_weather_simple, btn_weather_with_sun, btn_back)
+    location_client.row(btn_kiev, btn_other_city, bt_location, btn_back)
+    undo_client.add(btn_undo)
 
 
