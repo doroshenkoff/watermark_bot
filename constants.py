@@ -26,5 +26,15 @@ WEATHER_TOKEN = 'ee3c0ec7b77535a9bdc63afaa12ec4dc'
 GOOGLE_API_KEY = 'AIzaSyCAGhFNKlXN8dV5VMc6T37IDrC4nuyiWlc'
 
 WEATHER_ICONS = {
-    'пасмурно': ''
+    'Clouds': '☁',
+    'Clear': '☀',
+    'Snow': '❄',
+    'Rain': '🌧',
+    'Drizzle': '🌦',
+    'Thunderstorm': '⛈'
 }
+
+WIND_DIRECTIONS = ['северный', 'северо-восточный', 'восточный', 'юго-восточный', 'южный', 'юго-западный', 'западный',
+                   'северо-западный']
+
+MOON_PHASES = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘']
