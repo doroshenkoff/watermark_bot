@@ -1,48 +1,30 @@
-import logging, os, string, json, constants
-from utils import weather, weather_forecast
-from aiogram import Bot, types
-from aiogram.dispatcher import Dispatcher, FSMContext
+import logging, string, json, constants
+from aiogram import types
+from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.utils import executor
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from random import choice
 from time import sleep
-from utils import WeatherHandler, currency_foreign
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from keyboard import KeyboardHandler
+from create_bot import *
+from main_keyboard import KeyboardHandler
 from inline_keyboard import InlineKeyboardHandler
 from datetime import datetime
-from watermark import create_watermark
-from queue import LifoQueue
+from watermark.watermark import create_watermark
+from weather.weather_handler import register_handlers_weather
+from finance.finance_handler import register_handlers_finance
 
 logging.basicConfig(level=logging.INFO)
 
-storage = MemoryStorage()
-bot = Bot(os.getenv('TOKEN_TELEGRAM'))
 
-dp = Dispatcher(bot, storage=storage)
 dp.middleware.setup(LoggingMiddleware())
 
-weather_params = WeatherHandler()
 
 params = {
     'vote_up': 0,
     'vote_down': 0
 }
 
-history = LifoQueue()
-
-
-def clear_history():
-    global history
-    history = LifoQueue()
-
-
-class FSMStates(StatesGroup):
-    city = State()
-    image_for_watermark = State()
-    watermark_word = State()
 
 
 async def on_startup(_):
@@ -73,75 +55,14 @@ def check_words(fn):
 @dp.message_handler(commands=['start'])
 async def start_cmd(msg: types.Message):
     await bot.send_message(msg.from_user.id, 'Выберите что-то из пункта меню',
-                           reply_markup=KeyboardHandler.kb_client)
-
-
-@dp.message_handler(Text('🌡Температура воздуха'))
-async def get_simple_weather(msg: types.Message):
-    clear_history()
-    await bot.send_message(msg.from_user.id, weather(weather_params),
-                           reply_markup=KeyboardHandler.kb_client)
-
-
-@dp.message_handler(Text('☔🌢🌅Полная информация'))
-async def get_full_weather(msg: types.Message):
-    clear_history()
-    await bot.send_message(msg.from_user.id, weather(weather_params, True),
-                           reply_markup=KeyboardHandler.kb_client)
-
-
-@dp.message_handler(Text('☀Погода'))
-async def get_weather(msg: types.Message):
-    history.put(KeyboardHandler.kb_client)
-    await bot.send_message(msg.from_user.id, 'Выберите расположение', reply_markup=KeyboardHandler.location_client)
-
-
-# 'Выберите тип погоды', reply_markup=KeyboardHandler.weather_prognosus
-
-@dp.message_handler(Text('⌚Текущая'))
-async def get_weather_current(msg: types.Message):
-    history.put(KeyboardHandler.weather_prognosus)
-    await bot.send_message(msg.from_user.id, weather(weather_params, True),
-                           reply_markup=KeyboardHandler.kb_client)
-
-
-@dp.message_handler(Text('👀Прогноз погоды'))
-async def get_prognosus(msg: types.Message):
-    await bot.send_message(msg.from_user.id, f'Прогноз погоды для {weather_params.city}',
-                           reply_markup=KeyboardHandler.kb_client)
-    for item in weather_forecast(weather_params):
-        await bot.send_message(msg.from_user.id, item)
-
-
-
-@dp.message_handler(Text('🌃Киев'))
-async def handle_kiev(message: types.Message):
-    weather_params.city = 'Kiev'
-    weather_params.lat = None
-    await message.answer('Выберите тип погоды', reply_markup=KeyboardHandler.weather_prognosus)
-
-
-@dp.message_handler(Text('🏞Выберите населенный пункт'))
-async def handle_loc(message: types.Message):
-    await FSMStates.city.set()
-    await message.reply('Введите город')
-
-
-@dp.message_handler(state=FSMStates.city)
-async def input_city(msg: types.Message, state: FSMContext):
-    weather_params.lat = None
-    async with state.proxy() as data:
-        data['city'] = msg.text
-        weather_params.city = data['city']
-        await msg.answer('Выберите тип погоды', reply_markup=KeyboardHandler.weather_prognosus)
-    await state.finish()
+                           reply_markup=KeyboardHandler.main_kb)
 
 
 #     **********************************************
 @dp.message_handler(Text('💧Нанести водяной знак'))
 async def make_watermark(msg: types.Message):
     await FSMStates.image_for_watermark.set()
-    await msg.reply('Выберите картинку', reply_markup=KeyboardHandler.undo_client)
+    await msg.reply('Выберите картинку', reply_markup=KeyboardHandler.undo_kb)
 
 
 @dp.message_handler(content_types=['photo'], state=FSMStates.image_for_watermark)
@@ -153,7 +74,7 @@ async def input_photo(msg: types.Message, state: FSMContext):
         data['image_for_watermark'] = name
         await FSMStates.next()
         await msg.reply('Теперь введите текст для водяного знака (не больше 20 символов',
-                        reply_markup=KeyboardHandler.undo_client)
+                        reply_markup=KeyboardHandler.undo_kb)
 
 
 @dp.message_handler(state=FSMStates.watermark_word)
@@ -165,42 +86,29 @@ async def input_text(msg: types.Message, state: FSMContext, *args, **kwargs):
             await FSMStates.watermark_word.state
         elif msg.text == '☠Отменить':
             await state.finish()
-            await msg.reply('Отменяем...', reply_markup=KeyboardHandler.kb_client)
+            await msg.reply('Отменяем...', reply_markup=KeyboardHandler.main_kb)
         else:
             data['watermark_word'] = msg.text
-            await msg.reply('Ваши данные приняты, ожидайте картинку', reply_markup=KeyboardHandler.kb_client)
+            await msg.reply('Ваши данные приняты, ожидайте картинку', reply_markup=KeyboardHandler.main_kb)
             await bot.send_photo(msg.from_user.id, create_watermark(data["image_for_watermark"], data["watermark_word"]))
         await state.finish()
 
-#    ******************************************************************************
 
 
-@dp.message_handler(content_types=['location'])
-async def handle_location(message: types.Message):
-    weather_params.lat = message.location.latitude
-    weather_params.lon = message.location.longitude
-    await message.answer('Выберите тип погоды', reply_markup=KeyboardHandler.weather_prognosus)
 
 
-@dp.message_handler(Text('💱Курсы валют'))
-async def show_currency(msg: types.Message):
-    await msg.reply(currency_foreign(), reply_markup=KeyboardHandler.kb_client)
 
-
-@dp.message_handler(Text('⏪Назад'))
 async def step_back(msg: types.Message):
     await msg.reply('Переходим в прошлое меню', reply_markup=history.get())
 
 
-@dp.message_handler(Text('Inline button test'))
 async def inline_test(msg: types.Message):
     message = f'👍 - {params["vote_up"]}, 👎 - {params["vote_down"]}'
-    await msg.reply('Для отмены выберите пункт меню Отменить', reply_markup=KeyboardHandler.undo_client)
+    await msg.reply('Для отмены выберите пункт меню Отменить', reply_markup=KeyboardHandler.undo_kb)
     inline_msg = await bot.send_message(msg.from_user.id, message, reply_markup=InlineKeyboardHandler.vote_ikb)
     params['msg_id'] = inline_msg.message_id
 
 
-@dp.message_handler(state='*', regexp='☠Отменить')
 async def cancel_handler(msg: types.Message, state: FSMContext):
     current_state = await state.get_state()
     if params.get('msg_id'):
@@ -211,10 +119,9 @@ async def cancel_handler(msg: types.Message, state: FSMContext):
     await on_shutdown()
     if current_state:
         await state.finish()
-    await msg.reply('Отменяем...', reply_markup=KeyboardHandler.kb_client)
+    await msg.reply('Отменяем...', reply_markup=KeyboardHandler.main_kb)
 
 
-@dp.callback_query_handler(lambda msg: msg.data in ['like', 'dislike'])
 async def vote_handler(callback: types.CallbackQuery):
     await callback.answer()
     vote = callback.data
@@ -229,11 +136,21 @@ async def vote_handler(callback: types.CallbackQuery):
                                 callback.message.message_id, reply_markup=InlineKeyboardHandler.vote_ikb)
 
 
-@dp.message_handler()
 @check_words
 async def echo_send(msg: types.Message, *args, **kwargs):
     await msg.answer(msg.text)
 
 
+def register_handlers(dp: Dispatcher):
+    register_handlers_weather(dp)
+    register_handlers_finance(dp)
+    # dp.register_message_handler(vote_handler, lambda msg: msg.data in ['like', 'dislike'])
+    dp.register_message_handler(inline_test, Text('Inline button test'))
+    dp.register_message_handler(step_back, Text('⏪Назад'))
+    dp.register_message_handler(echo_send)
+    dp.register_message_handler(cancel_handler, state='*', regexp='☠Отменить')
+
+
 if __name__ == '__main__':
+    register_handlers(dp)
     executor.start_polling(dispatcher=dp, skip_updates=True, on_startup=on_startup)

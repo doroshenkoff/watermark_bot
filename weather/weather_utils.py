@@ -1,9 +1,12 @@
-import requests, locale
-import constants
-import googlemaps
 from datetime import datetime
 
-from weather import weather_constants
+import googlemaps
+import locale
+import requests
+
+import constants
+
+from . import weather_constants as wc
 
 
 class WeatherHandler:
@@ -53,7 +56,7 @@ def weather(params: WeatherHandler, sun=False):
     out += ''
     out += f'🌡 Температура воздуха {"+" if temp > 0 else "-" if temp < 0 else ""}{temp}\n'
     out += ''
-    out += f"{weather_constants.WEATHER_ICONS.get(weather['weather'][0]['main'], '')} {conditions}"
+    out += f"{wc.WEATHER_ICONS.get(weather['weather'][0]['main'], '')} {conditions}"
     if sun:
         d_rise = datetime.fromtimestamp(weather['sys']['sunrise'])
         d_set = datetime.fromtimestamp(weather['sys']['sunset'])
@@ -87,25 +90,19 @@ def weather_forecast(params: WeatherHandler):
         sunset = datetime.fromtimestamp(day['sunset'])
         day_light = str(sunset-sunrise).split(':')
         s = f"{datetime.fromtimestamp(day['dt']).strftime('%a, %d.%m')}\n"
-        s += f'фаза луны - {weather_constants.MOON_PHASES[int(day["moon_phase"] / 0.125)]}\n'
+        s += f'фаза луны - {wc.MOON_PHASES[int(day["moon_phase"] / 0.125)]}\n'
         s += f'🌅 рассвет - {format_time(sunrise.hour)}:{format_time(sunrise.minute)}\n'
         s += f'🌇 закат - {format_time(sunset.hour)}:{format_time(sunset.minute)}\n'
         s += f'☀ продолжительность светового дня - {day_light[0]} часов, {day_light[1]} минут\n\n'
         s += f'🌡 Температура воздуха {int(day["temp"]["min"])}° ... {int(day["temp"]["max"])}°\n'
-        s += f"{weather_constants.WEATHER_ICONS.get(day['weather'][0]['main'], '')} {day['weather'][0]['description']}\n"
+        s += f"{wc.WEATHER_ICONS.get(day['weather'][0]['main'], '')} {day['weather'][0]['description']}\n"
         if day.get('rain'):
             s += f'☔Ожидаемые осадки - {day["rain"]} мм, вероятность дождя - {int(day["pop"] * 100)}%\n'
         s += f'🌢 влажность воздуха - {day["humidity"]}%\n'
         s += f'🫀 атмосферное давление - {int(day["pressure"] * 0.750062)} мм рт.ст.\n'
-        s += f'🌬 ветер {weather_constants.WIND_DIRECTIONS[day["wind_deg"] // 45]}, ' \
+        s += f'🌬 ветер {wc.WIND_DIRECTIONS[day["wind_deg"] // 45]}, ' \
              f'скорость ветра - {int(day["wind_speed"])} м/с, ' \
              f'{day.get("wind_gust") and ("возможны порывы до " + str(int(day["wind_gust"])) + " м/с")}\n'
         out.append(s)
     return out
 
-
-
-
-if __name__ == '__main__':
-    for item in weather_forecast(WeatherHandler()):
-        print(item)
