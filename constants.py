@@ -1,4 +1,4 @@
-
+import os
 
 BAD_WORDS = [
     'хуй',
@@ -23,7 +23,7 @@ ANSWER_FOR_BAD_WORDS = [
     'А без мата можно обойтись, козёл?'
 ]
 
-WEATHER_TOKEN = 'ee3c0ec7b77535a9bdc63afaa12ec4dc'
+WEATHER_TOKEN = os.getenv('WEATHER_TOKEN')
 
-GOOGLE_API_KEY = 'AIzaSyCAGhFNKlXN8dV5VMc6T37IDrC4nuyiWlc'
+GOOGLE_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
 
