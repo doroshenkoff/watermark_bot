@@ -50,7 +50,7 @@ def weather(params: WeatherHandler, sun=False):
     conditions = weather['weather'][0]['description'].capitalize()
     elevation = int(gmaps.elevation((lat, lon))[0]['elevation'])
 
-    out = f'🏙 Выбранный населенный пункт - {params.city}\n'
+    out = f'🏙 Выбранный населенный пункт - <b>{params.city}</b>\n'
     out += ''
     out += f'🏔 высота - {elevation} м над уровнем моря\n'
     out += ''
@@ -89,7 +89,7 @@ def weather_forecast(params: WeatherHandler):
         sunrise = datetime.fromtimestamp(day['sunrise'])
         sunset = datetime.fromtimestamp(day['sunset'])
         day_light = str(sunset-sunrise).split(':')
-        s = f"{datetime.fromtimestamp(day['dt']).strftime('%a, %d.%m')}\n"
+        s = f"<b><i>{datetime.fromtimestamp(day['dt']).strftime('%a, %d.%m')}</i></b>\n"
         s += f'фаза луны - {wc.MOON_PHASES[int(day["moon_phase"] / 0.125)]}\n'
         s += f'🌅 рассвет - {format_time(sunrise.hour)}:{format_time(sunrise.minute)}\n'
         s += f'🌇 закат - {format_time(sunset.hour)}:{format_time(sunset.minute)}\n'

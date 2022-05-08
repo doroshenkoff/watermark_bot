@@ -1,4 +1,5 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.utils.callback_data import CallbackData
 from main_keyboard import btn_back
 
 btn_weather_simple = KeyboardButton('🌡Температура воздуха')
@@ -13,3 +14,16 @@ weather_prognosus = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=
     .add(KeyboardButton('⌚Текущая')).add(KeyboardButton('👀Прогноз погоды')).add(btn_back)
 location_client = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)\
     .add(btn_kiev, btn_other_city, bt_location, btn_back)
+
+
+period_data = CallbackData('period', 'data')
+
+period_kb = InlineKeyboardMarkup(resize_keyboard=True).add(
+    InlineKeyboardButton('Сегодня', callback_data=period_data.new(data='0')),
+    InlineKeyboardButton('Завтра', callback_data=period_data.new(data='1')),
+    InlineKeyboardButton('3 дня', callback_data=period_data.new(data='3')),
+    InlineKeyboardButton('5 дней', callback_data=period_data.new(data='5')),
+    InlineKeyboardButton('7 дней', callback_data=period_data.new(data='7'))
+)
+
+

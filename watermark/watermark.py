@@ -3,9 +3,6 @@ import io
 
 
 def create_watermark(img, text):
-    # now = datetime.now()
-    # name = f'img-{now.year}-{now.month}-{now.day}--{now.hour}-{now.minute}'
-    # img_temp = f'static\\{name}.{ext}'
 
     with Image.open(img) as im:
         width, height = im.size
@@ -36,7 +33,6 @@ def create_watermark(img, text):
                 draw.text((x + i, y + j), text, font=font, fill=fillcolor)
 
         out = Image.blend(im, im_text, 0.08)
-    # out.save(img_temp)
     bytes_out = io.BytesIO()
     out.save(bytes_out, format='JPEG')
     return bytes_out.getvalue()

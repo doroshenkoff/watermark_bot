@@ -1,0 +1,1 @@
+from watermark import watermark, watermark_handler

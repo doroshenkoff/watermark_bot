@@ -4,7 +4,13 @@ from aiogram.dispatcher import Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from queue import LifoQueue
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from main_keyboard import KeyboardHandler
 
+
+params = {
+    'vote_up': 0,
+    'vote_down': 0
+}
 
 class FSMStates(StatesGroup):
     city = State()
