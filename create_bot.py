@@ -4,7 +4,8 @@ from aiogram.dispatcher import Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from queue import LifoQueue
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from main_keyboard import KeyboardHandler
+from constants import *
+
 
 
 params = {
@@ -19,6 +20,6 @@ class FSMStates(StatesGroup):
 
 
 storage = MemoryStorage()
-bot = Bot(os.getenv('TOKEN_TELEGRAM'))
+bot = Bot(TOKEN_TELEGRAM)
 dp = Dispatcher(bot, storage=storage)
 history = LifoQueue()
