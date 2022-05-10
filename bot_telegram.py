@@ -1,5 +1,5 @@
-import logging, json
-from aiogram import types
+import logging, json, argparse
+from aiogram import types, executor
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from aiogram.utils.executor import start_webhook
@@ -11,13 +11,13 @@ from weather.weather_handler import register_handlers_weather
 from finance.finance_handler import register_handlers_finance
 from watermark.watermark_handler import register_handlers_watermark
 from utils import check_words
-from constants import WEBHOOK_URL, WEBHOOK_HOST, WEBAPP_PORT
+from constants import WEBHOOK_URL, WEBAPP_PORT
 
 logging.basicConfig(level=logging.INFO)
 dp.middleware.setup(LoggingMiddleware())
 
 
-async def on_startup(_):
+async def on_startup(dp):
     await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
     history.put(KeyboardHandler.main_kb)
     try:
@@ -30,13 +30,23 @@ async def on_startup(_):
         params['vote_down'] = 0
 
 
-async def on_shutdown():
-    bot.delete_webhook()
+async def write_changes():
     try:
         with open('static/params.json', 'w') as f:
             json.dump(params, f)
     except:
         pass
+
+
+async def on_shutdown(dp):
+    logging.warning('Shutting down..')
+    await write_changes()
+    await bot.delete_webhook()
+
+    await dp.storage.close()
+    await dp.storage.wait_closed()
+
+    logging.warning('Bye!')
 
 
 async def start_cmd(msg: types.Message):
@@ -63,7 +73,7 @@ async def cancel_handler(msg: types.Message, state: FSMContext):
             await bot.delete_message(msg.from_user.id, params['msg_id'])
         except:
             pass
-    await on_shutdown()
+    await write_changes()
     if current_state:
         await state.finish()
     await msg.reply('Отменяем...', reply_markup=KeyboardHandler.main_kb)
@@ -93,22 +103,34 @@ def register_handlers(dp: Dispatcher):
     register_handlers_finance(dp)
     register_handlers_watermark(dp)
     dp.register_message_handler(start_cmd, commands=['start'])
-    # dp.register_message_handler(vote_handler, lambda msg: msg.data in ['like', 'dislike'])
+    dp.register_callback_query_handler(vote_handler, lambda msg: msg.data in ['like', 'dislike'])
     dp.register_message_handler(inline_test, Text('Inline button test'))
     dp.register_message_handler(step_back, Text('⏪Назад'))
     dp.register_message_handler(echo_send)
     dp.register_message_handler(cancel_handler, state='*', regexp='☠Отменить')
 
 
-if __name__ == '__main__':
+def main(production=True):
     register_handlers(dp)
-    # executor.start_polling(dispatcher=dp, skip_updates=True, on_startup=on_startup)
-    start_webhook(
-        dispatcher=dp,
-        webhook_path=WEBHOOK_PATH,
-        skip_updates=True,
-        on_startup=on_startup,
-        on_shutdown=on_shutdown,
-        host=WEBAPP_HOST,
-        port=WEBAPP_PORT,
-    )
+    if production:
+        start_webhook(
+            dispatcher=dp,
+            webhook_path=WEBHOOK_PATH,
+            skip_updates=True,
+            on_startup=on_startup,
+            on_shutdown=on_shutdown,
+            host=WEBAPP_HOST,
+            port=WEBAPP_PORT,
+        )
+    else:
+        executor.start_polling(dispatcher=dp, skip_updates=True, on_startup=on_startup)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--p', help='Turns on production mode')
+    args = parser.parse_args()
+    if args.p:
+        main()
+    else:
+        main(False)

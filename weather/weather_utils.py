@@ -27,7 +27,7 @@ def get_location(params: WeatherHandler):
         try:
             loc = gmaps.geocode(params.city)[0]['geometry']['location']
         except:
-            return 'Данный населенный пункт не обнаружен, отображение погоды невозможно...'
+            return None
         lat, lon = loc['lat'], loc['lng']
     else:
         lat, lon = params.lat, params.lon

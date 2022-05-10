@@ -17,7 +17,11 @@ async def input_photo(msg: types.Message, state: FSMContext):
     async with state.proxy() as data:
         now = datetime.now()
         name = f'static/photos/img-{now.year}-{now.month}-{now.day}--{now.hour}-{now.minute}.jpg'
-        await msg.photo[-1].download(name)
+        try:
+            await msg.photo[-1].download(name)
+        except:
+            await msg.reply('Данная операция невозможна, идите нахуй...',
+                            reply_markup=KeyboardHandler.undo_kb)
         data['image_for_watermark'] = name
         await FSMStates.next()
         await msg.reply('Теперь введите текст для водяного знака (не больше 20 символов',

@@ -1,9 +1,9 @@
 import typing
-from aiogram import types, Dispatcher
+from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from main_keyboard import KeyboardHandler
-from .weather_utils import WeatherHandler, weather, weather_forecast
+from .weather_utils import WeatherHandler, weather, weather_forecast, get_location
 from create_bot import *
 from .weather_keyboard import *
 
@@ -55,7 +55,10 @@ async def input_city(msg: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['city'] = msg.text
         weather_params.city = data['city']
-        await msg.answer('Выберите тип погоды', reply_markup=weather_prognosus)
+        if not get_location(weather_params):
+            await msg.answer('Данный город не обнаружен, попробуйте еще раз', reply_markup=history.get())
+        else:
+            await msg.answer('Выберите тип погоды', reply_markup=weather_prognosus)
     await state.finish()
 
 
