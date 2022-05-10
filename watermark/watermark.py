@@ -13,7 +13,14 @@ def create_watermark(img, text):
         im_text = Image.new('RGB', (width, height))
 
         draw = ImageDraw.Draw(im_text)
-        font = ImageFont.truetype('arial.ttf', size=width // 20)
+
+        try:
+            font = ImageFont.truetype('arial.ttf', size=width // 20)
+        except OSError:
+            try:
+                font = ImageFont.truetype('Ubuntu-R.ttf', size=width // 20)
+            except:
+                font = ImageFont.load_default()
 
         for i in range(0, width, width // 4):
             for j in range(0, height, height // 6):

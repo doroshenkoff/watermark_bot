@@ -83,7 +83,7 @@ def weather_forecast(params: WeatherHandler):
     }
 
     data = requests.get(url, params=weather_payload).json()
-    locale.setlocale(locale.LC_ALL, 'ru')
+    # locale.setlocale(locale.LC_ALL, 'ru')
     out = []
     for day in data['daily']:
         sunrise = datetime.fromtimestamp(day['sunrise'])
