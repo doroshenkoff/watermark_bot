@@ -4,7 +4,7 @@ from aiogram.dispatcher import Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from queue import LifoQueue
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from constants import *
+from config import *
 
 
 

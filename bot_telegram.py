@@ -1,4 +1,4 @@
-import logging, json, argparse
+import logging, json, argparse, schedule
 from aiogram import types, executor
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
@@ -11,7 +11,7 @@ from weather.weather_handler import register_handlers_weather
 from finance.finance_handler import register_handlers_finance
 from watermark.watermark_handler import register_handlers_watermark
 from utils import check_words
-from constants import WEBHOOK_URL, WEBAPP_PORT
+from config import WEBHOOK_URL, WEBAPP_PORT, production
 
 logging.basicConfig(level=logging.INFO)
 dp.middleware.setup(LoggingMiddleware())
@@ -50,6 +50,8 @@ async def on_shutdown(dp):
 
 
 async def start_cmd(msg: types.Message):
+    params['chat_id'] = msg.from_user.id
+    schedule.every(30).seconds.do(send_greeting)
     await bot.send_message(msg.from_user.id, 'Выберите что-то из пункта меню',
                            reply_markup=KeyboardHandler.main_kb)
 
@@ -107,7 +109,12 @@ def register_handlers(dp: Dispatcher):
     dp.register_message_handler(inline_test, Text('Inline button test'))
     dp.register_message_handler(step_back, Text('⏪Назад'))
     dp.register_message_handler(echo_send)
-    dp.register_message_handler(cancel_handler, state='*', regexp='☠Отменить')
+    dp.register_message_handler(cancel_handler, Text('☠Отменить'), state='*')
+
+
+async def send_greeting():
+    if params.get('chat_id'):
+        await bot.send_message(params['chat_id'], 'Hello, <i>Pidar</i>', parse_mode='HTML')
 
 
 def main(production=True):
@@ -131,6 +138,5 @@ if __name__ == '__main__':
     parser.add_argument('--p', help='Turns on production mode')
     args = parser.parse_args()
     if args.p:
-        main()
-    else:
-        main(False)
+        production = True
+    main(production)

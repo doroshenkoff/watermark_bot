@@ -18,7 +18,7 @@ def create_watermark(img, text):
             font = ImageFont.truetype('arial.ttf', size=width // 20)
         except OSError:
             try:
-                font = ImageFont.truetype('GothicA1-Medium.ttf', size=width // 20)
+                font = ImageFont.truetype('.fonts/ubuntu.bold.ttf', size=width // 20)
             except:
                 font = ImageFont.load_default()
 

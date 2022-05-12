@@ -4,7 +4,7 @@ import googlemaps
 import locale
 import requests
 
-import constants
+import config
 
 from . import weather_constants as wc
 
@@ -19,7 +19,7 @@ class WeatherHandler:
 def format_time(time: int):
     return f'0{time}' if time < 10 else time
 
-gmaps = googlemaps.Client(constants.GOOGLE_API_KEY)
+gmaps = googlemaps.Client(config.GOOGLE_API_KEY)
 
 def get_location(params: WeatherHandler):
 
@@ -34,13 +34,26 @@ def get_location(params: WeatherHandler):
     return lat, lon
 
 
+def get_air_pollution(lat, lon):
+    try:
+        data = requests.get('http://api.openweathermap.org/data/2.5/air_pollution',
+                            params={'lat': lat,
+                                    'lon': lon,
+                                    'appid': config.WEATHER_TOKEN})\
+                            .json()
+        index = data['list'][0]['main']['aqi']
+        return ''.join('★' if i < 6-index else '✩' for i in range(5))
+    except:
+        return 'нет данных'
+
+
 def weather(params: WeatherHandler, sun=False):
     lat, lon = get_location(params)
 
     weather_payload = {
         'lat': lat,
         'lon': lon,
-        'appid': constants.WEATHER_TOKEN,
+        'appid': config.WEATHER_TOKEN,
         'units': 'metric',
         'lang': 'ru'
     }
@@ -58,14 +71,15 @@ def weather(params: WeatherHandler, sun=False):
     out += ''
     out += f"{wc.WEATHER_ICONS.get(weather['weather'][0]['main'], '')} {conditions}"
     if sun:
-        d_rise = datetime.fromtimestamp(weather['sys']['sunrise'])
-        d_set = datetime.fromtimestamp(weather['sys']['sunset'])
+        d_rise = datetime.fromtimestamp(weather['sys']['sunrise'] + weather['timezone'] - config.timezone)
+        d_set = datetime.fromtimestamp(weather['sys']['sunset'] + weather['timezone'] - config.timezone)
         out += f'\n🌥 облачность - {weather["clouds"]["all"]}%\n'
         out += f'🌬 скорость ветра - {weather["wind"]["speed"]} м/c\n'
         out += f'🌢 влажность воздуха - {weather["main"]["humidity"]}%\n'
         out += f'🫀 атмосферное давление - {int(weather["main"]["pressure"] * 0.750062)} мм рт.ст.\n'
         out += f'🌅 рассвет - {format_time(d_rise.hour)}:{format_time(d_rise.minute)}\n'
-        out += f'🌇 закат - {format_time(d_set.hour)}:{format_time(d_set.minute)}'
+        out += f'🌇 закат - {format_time(d_set.hour)}:{format_time(d_set.minute)}\n'
+        out += f'качество воздуха - {get_air_pollution(lat, lon)}'
 
     return out
 
@@ -76,18 +90,22 @@ def weather_forecast(params: WeatherHandler):
     weather_payload = {
         'lat': lat,
         'lon': lon,
-        'appid': constants.WEATHER_TOKEN,
+        'appid': config.WEATHER_TOKEN,
         'units': 'metric',
         'lang': 'ru',
         'exclude': 'current,minutely,hourly,alerts',
     }
 
     data = requests.get(url, params=weather_payload).json()
-    # locale.setlocale(locale.LC_ALL, 'ru')
+    try:
+        locale.setlocale(locale.LC_ALL, 'ru')
+    except:
+        pass
     out = []
+
     for day in data['daily']:
-        sunrise = datetime.fromtimestamp(day['sunrise'])
-        sunset = datetime.fromtimestamp(day['sunset'])
+        sunrise = datetime.fromtimestamp(day['sunrise'] + data['timezone_offset'] - config.timezone)
+        sunset = datetime.fromtimestamp(day['sunset'] + data['timezone_offset'] - config.timezone)
         day_light = str(sunset-sunrise).split(':')
         s = f"<b><i>{datetime.fromtimestamp(day['dt']).strftime('%a, %d.%m')}</i></b>\n"
         s += f'фаза луны - {wc.MOON_PHASES[int(day["moon_phase"] / 0.125)]}\n'
