@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, Enum, Date
-from sqlalchemy.orm import declarative_base
-import enum
+from sqlalchemy import Column, Integer, String, Enum, Date, create_engine
+from sqlalchemy.orm import declarative_base, Session
+import enum, config
 from datetime import date
 
 Base = declarative_base()
@@ -29,13 +29,34 @@ class ViewedVideos(Base):
     link = Column(String, nullable=False)
     rating = Column(Integer, default=1)
     createdAt = Column(Date, default=date.today())
-    
-    @property
-    def rating(self):
-        return self.rating
 
-    @rating.setter
-    def rating(self, value):
-        if not isinstance(value, int) or value not in range(1, 6):
-            raise ValueError('Rating must be integer value from 1 to 5')
-        self.rating = value
+    def __init__(self, name, author, link, **kwargs):
+        self.name = name
+        self.author = author
+        self.link = link
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+
+def create_db(db):
+    engine = create_engine(db, echo=True)
+    Base.metadata.create_all(engine)
+
+
+def add_video(name, author, link, *, db, **kwargs):
+    engine = create_engine(db, echo=True)
+    session = Session(bind=engine)
+    video = ViewedVideos(name, author, link)
+    for k,v in kwargs.items():
+        setattr(video, k, v)
+    session.add(video)
+    session.commit()
+
+
+if __name__ == '__main__':
+    create_db(config.DB_TEST)
+    add_video('Telegram Bot inline режим', 'Python Hub Studio',
+              'https://www.youtube.com/watch?v=Cn0sMvgqf4E&t=71s', db=config.DB_TEST,
+              section=Section.programming, chapter='Python, Aiogram')
+
+

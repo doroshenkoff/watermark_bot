@@ -77,8 +77,8 @@ async def set_inline_prognosus(message: types.Message):
 async def select_prognosus(callback: types.CallbackQuery, callback_data: typing.Dict[str, str]):
     await callback.answer()
     answer = callback_data['data']
-    await bot.send_message(callback.from_user.id, f'<h2>Прогноз погоды для {weather_params.city}</h2>',
-                           reply_markup=KeyboardHandler.main_kb, parse_mode='HTML')
+    await bot.send_message(callback.from_user.id, f'<b>Прогноз погоды для {weather_params.city}</b>',
+                           reply_markup=period_kb, parse_mode='HTML')
     if answer in ('0', '1'):
         out = weather_forecast(weather_params)[int(answer)]
     else:

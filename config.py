@@ -23,6 +23,10 @@ ANSWER_FOR_BAD_WORDS = [
     'А без мата можно обойтись, козёл?'
 ]
 
+
+DB_TEST = 'sqlite:///videos.db'
+
+
 WEATHER_TOKEN = os.getenv('WEATHER_TOKEN')
 
 GOOGLE_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')

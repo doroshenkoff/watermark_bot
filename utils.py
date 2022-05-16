@@ -4,9 +4,6 @@ import config, string
 from random import choice
 from aiogram import types
 
-import googlemaps
-from datetime import datetime
-
 
 def check_words(fn):
     async def inner(msg: types.Message, state: FSMContext, *args, **kwargs):
