@@ -31,7 +31,7 @@ WEATHER_TOKEN = os.getenv('WEATHER_TOKEN')
 
 GOOGLE_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
 
-YAHOO_API_KEY = 'KvEw8RIAIt5zqhFjULdTW2UCLWDiUuR039EzKLfY'
+YAHOO_API_KEY = os.getenv('YAHOO_API_KEY')
 
 
 # global constants
