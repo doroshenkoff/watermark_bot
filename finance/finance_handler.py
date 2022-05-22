@@ -1,5 +1,5 @@
 from .finance_keyboard import finance_kb, world_cur_kb, period_kb
-from .finance_utils import currency_foreign, get_nbu_cur
+from .finance_utils import currency_foreign, get_nbu_cur, get_spark_finance
 from aiogram import types
 from aiogram.dispatcher.filters import Text
 from create_bot import *
@@ -32,7 +32,11 @@ async def select_period(callback: types.CallbackQuery):
     await callback.answer()
     answer = callback.data
     if answer == '10':
-        await bot.send_message(callback.from_user.id, currency_foreign(True), parse_mode='HTML')
+        await bot.send_message(callback.from_user.id, currency_foreign(True), parse_mode='HTML', reply_markup=period_kb)
+    else:
+        period = int(answer) // 10
+        await bot.send_message(callback.from_user.id, get_spark_finance(period),
+                               parse_mode='HTML', reply_markup=period_kb)
 
 
 def register_handlers_finance(dp: Dispatcher):

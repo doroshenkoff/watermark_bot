@@ -7,7 +7,7 @@ class KeyboardHandler:
     btn_weather = KeyboardButton('☀Погода')
     btn_currency = KeyboardButton('💱Финансы')
     btn_watermark = KeyboardButton('💧Нанести водяной знак')
-    btn_inline = KeyboardButton('Inline button test')
+    btn_inline = KeyboardButton('🌎Положение планет')
 
     btn_back = KeyboardButton('⏪Назад')
     btn_undo = KeyboardButton('☠Отменить')

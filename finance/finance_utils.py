@@ -1,6 +1,9 @@
 from bs4 import BeautifulSoup
 import requests
 from fake_headers import Headers
+from datetime import date
+
+import config
 from .finance_constants import *
 
 
@@ -17,14 +20,49 @@ def currency_foreign(details=False):
         price_range = data["quoteResponse"]["result"][0]['regularMarketDayRange']['raw']
         percentage = data["quoteResponse"]["result"][0]['regularMarketChangePercent']['fmt']
         deviation = (price_open['raw'] - price['raw']) * 20 / price_open['raw']
+        mark = '' if percentage[0] == '-' else '+'
         sym = '▼' * min(int(deviation) + 1, 5) if deviation > 0 else '▲' * -max(int(deviation) - 1, -5)
         if details:
-            out += f'<b><i>{fin.view}</i></b>:\n<b>Current</b>: {sym} {price["fmt"]}\n' \
+            out += f'<b><i>{fin.view}</i></b>:\n<b>Current</b>: {sym} {price["fmt"]}💲\n' \
                    f'<b>Open</b>: {price_open["fmt"]}💲\n<b>Range</b>: {price_range}💲\n' \
-                   f'<b>Deviation</b>: {percentage}\n\n'
+                   f'<b>Deviation</b>: {mark}{percentage}\n\n'
         else:
             out += f'{fin.view} - {sym} {price["fmt"]}💲\n'
     return out
+
+
+def get_spark_finance(period: int):
+    url = 'https://yfapi.net/v8/finance/spark'
+    header = {'x-api-key': config.YAHOO_API_KEY}
+    yahoo_codes = ','.join(fin.yahoo_code for fin in FINANCE_CONSTANTS)
+    params = {
+                'interval': '1d',
+                'range': '1mo',
+                'symbols': yahoo_codes
+            }
+
+    data = requests.get(url, params=params, headers=header).json()
+    out = ''
+    for fin in FINANCE_CONSTANTS:
+        spark = data[fin.yahoo_code]
+        interval = min(len(spark['timestamp']), period)
+        spark_dict = {date.fromtimestamp(k): v for k, v in
+                      zip(spark['timestamp'][::-1][:interval], spark["close"][::-1][:interval])}
+        spark_min = min(spark_dict, key=spark_dict.get)
+        spark_max = max(spark_dict, key=spark_dict.get)
+        min_date = min(spark_dict)
+        max_date = max(spark_dict)
+        out += f'<b><i>{fin.view}</i></b>:\n'
+        out += f'Beginning: {min_date.strftime("%d-%m-%Y")} - <b>{spark_dict[min_date]}💲</b>\n'
+        out += f'End: {max_date.strftime("%d-%m-%Y")} - <b>{spark_dict[max_date]}💲</b>\n'
+        deviation = (spark_dict[max_date] - spark_dict[min_date]) / spark_dict[min_date] * 100
+        mark = '' if deviation <= 0 else '+'
+        sym = '▲' * min(int(deviation / 5) + 1, 5) if deviation > 0 else '▼' * -max(int(deviation / 5) - 1, -5)
+        out += f'<b>Deviation</b>: {mark}{round(deviation, 2)}%    {sym}\n'
+        out += f'Minimum: {spark_min.strftime("%d-%m-%Y")} - <b>{spark_dict[spark_min]}💲</b>\n'
+        out += f'Maximum: {spark_max.strftime("%d-%m-%Y")} - <b>{spark_dict[spark_max]}💲</b>\n\n'
+    return out
+
 
 
 def get_nbu_cur():
@@ -40,4 +78,4 @@ def get_nbu_cur():
 
 
 if __name__ == '__main__':
-    print(currency_foreign())
+    print(get_spark_finance(3))

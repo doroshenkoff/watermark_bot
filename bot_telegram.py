@@ -6,12 +6,12 @@ from aiogram.utils.executor import start_webhook
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from create_bot import *
 from main_keyboard import KeyboardHandler
-from inline_keyboard import InlineKeyboardHandler
 from weather.weather_handler import register_handlers_weather
 from finance.finance_handler import register_handlers_finance
 from watermark.watermark_handler import register_handlers_watermark
 from utils import check_words
 from config import WEBHOOK_URL, WEBAPP_PORT, production
+from astrology.astro_utils import get_horoscope
 
 logging.basicConfig(level=logging.INFO)
 dp.middleware.setup(LoggingMiddleware())
@@ -61,13 +61,6 @@ async def step_back(msg: types.Message):
     await msg.reply('Переходим в прошлое меню', reply_markup=history.get())
 
 
-async def inline_test(msg: types.Message):
-    message = f'👍 - {params["vote_up"]}, 👎 - {params["vote_down"]}'
-    await msg.reply('Для отмены выберите пункт меню Отменить', reply_markup=KeyboardHandler.undo_kb)
-    inline_msg = await bot.send_message(msg.from_user.id, message, reply_markup=InlineKeyboardHandler.vote_ikb)
-    params['msg_id'] = inline_msg.message_id
-
-
 async def cancel_handler(msg: types.Message, state: FSMContext):
     current_state = await state.get_state()
     if params.get('msg_id'):
@@ -81,18 +74,13 @@ async def cancel_handler(msg: types.Message, state: FSMContext):
     await msg.reply('Отменяем...', reply_markup=KeyboardHandler.main_kb)
 
 
-async def vote_handler(callback: types.CallbackQuery):
-    await callback.answer()
-    vote = callback.data
-    print(vote)
-    if vote == 'like':
-        params['vote_up'] += 1
-    elif vote == 'dislike':
-        params['vote_down'] += 1
+async def send_greeting():
+    if params.get('chat_id'):
+        await bot.send_message(params['chat_id'], 'Hello, <i>Pidar</i>', parse_mode='HTML')
 
-    msg = f'👍 {params["vote_up"]}, 👎 {params["vote_down"]}'
-    await bot.edit_message_text(msg, callback.from_user.id,
-                                callback.message.message_id, reply_markup=InlineKeyboardHandler.vote_ikb)
+
+async def horoscope(msg: types.Message):
+    await msg.answer(get_horoscope(), reply_markup=KeyboardHandler.main_kb, parse_mode='HTML')
 
 
 @check_words
@@ -105,16 +93,10 @@ def register_handlers(dp: Dispatcher):
     register_handlers_finance(dp)
     register_handlers_watermark(dp)
     dp.register_message_handler(start_cmd, commands=['start'])
-    dp.register_callback_query_handler(vote_handler, lambda msg: msg.data in ['like', 'dislike'])
-    dp.register_message_handler(inline_test, Text('Inline button test'))
     dp.register_message_handler(step_back, Text('⏪Назад'))
+    dp.register_message_handler(horoscope, Text('🌎Положение планет'))
     dp.register_message_handler(echo_send)
     dp.register_message_handler(cancel_handler, Text('☠Отменить'), state='*')
-
-
-async def send_greeting():
-    if params.get('chat_id'):
-        await bot.send_message(params['chat_id'], 'Hello, <i>Pidar</i>', parse_mode='HTML')
 
 
 def main(production=True):
