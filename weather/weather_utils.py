@@ -84,23 +84,29 @@ def weather(params: WeatherHandler, sun=False):
     return out
 
 
-def weather_forecast(params: WeatherHandler):
+def _get_forecast_data(view: str, params: WeatherHandler):
     url = 'https://api.openweathermap.org/data/2.5/onecall'
     lat, lon = get_location(params)
+    exclude_view = 'current,minutely,hourly' if view == 'daily' else 'current,minutely,daily'
     weather_payload = {
         'lat': lat,
         'lon': lon,
         'appid': config.WEATHER_TOKEN,
         'units': 'metric',
         'lang': 'ru',
-        'exclude': 'current,minutely,hourly,alerts',
+        'exclude': exclude_view,
     }
-
     data = requests.get(url, params=weather_payload).json()
     try:
         locale.setlocale(locale.LC_ALL, 'ru')
     except:
         pass
+    return data
+
+
+def weather_forecast(params: WeatherHandler):
+    data = _get_forecast_data('daily', params)
+
     out = []
 
     for day in data['daily']:
@@ -122,5 +128,21 @@ def weather_forecast(params: WeatherHandler):
              f'скорость ветра - {int(day["wind_speed"])} м/с, ' \
              f'{day.get("wind_gust") and ("возможны порывы до " + str(int(day["wind_gust"])) + " м/с")}\n'
         out.append(s)
+    return out
+
+
+def hourly_forecast(params: WeatherHandler):
+    data = _get_forecast_data('hourly', params)
+    out = ''
+    for hour in data['hourly'][:16:2]:
+        out += f"<b><i>{datetime.fromtimestamp(hour['dt']).strftime('%a, %d.%m, %H:%M')}</i></b>\n"
+        out += f'🌡 Температура воздуха {int(hour["temp"])}°\n'
+        out += f'💁 По ощущениям {int(hour["feels_like"])}°\n'
+        out += f"{wc.WEATHER_ICONS.get(hour['weather'][0]['main'], '')} {hour['weather'][0]['description']}\n"
+        if hour.get('rain'):
+            out += f'☔Ожидаемые осадки - {list(hour["rain"].values())[0]} мм\n'
+        out += f'💧влажность воздуха - {hour["humidity"]}%\n'
+        out += f'🌬 ветер {wc.WIND_DIRECTIONS[hour["wind_deg"] // 45]}, ' \
+               f'скорость ветра - {int(hour["wind_speed"])} м/с,\n\n'
     return out
 

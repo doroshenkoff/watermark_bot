@@ -3,7 +3,7 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
 from main_keyboard import KeyboardHandler
-from .weather_utils import WeatherHandler, weather, weather_forecast, get_location
+from .weather_utils import WeatherHandler, weather, weather_forecast, get_location, hourly_forecast
 from create_bot import *
 from .weather_keyboard import *
 
@@ -78,12 +78,21 @@ async def select_prognosus(callback: types.CallbackQuery, callback_data: typing.
     await callback.answer()
     answer = callback_data['data']
     await bot.send_message(callback.from_user.id, f'<b>Прогноз погоды для {weather_params.city}</b>', parse_mode='HTML')
+    reply = period_kb
     if answer in ('0', '1'):
         out = weather_forecast(weather_params)[int(answer)]
+        if answer == '0':
+            reply = hour_forecast_kb
     else:
         out = '\n\n'.join(weather_forecast(weather_params)[0:int(answer)])
     await bot.send_message(callback.from_user.id, out, parse_mode='HTML',
-                           reply_markup=period_kb)
+                           reply_markup=reply)
+
+
+async def get_hour_forecast(callback: types.CallbackQuery):
+    await callback.answer()
+    await bot.edit_message_text(hourly_forecast(weather_params), callback.from_user.id,
+                                callback.message.message_id, parse_mode='HTML', reply_markup=period_kb)
 
 
 def register_handlers_weather(dp: Dispatcher):
@@ -93,6 +102,7 @@ def register_handlers_weather(dp: Dispatcher):
     dp.register_message_handler(get_weather_current, Text('⌚Текущая'))
     dp.register_message_handler(set_inline_prognosus, Text('👀Прогноз погоды'))
     dp.register_callback_query_handler(select_prognosus, period_data.filter(data=['0', '1', '3', '5', '7']))
+    dp.register_callback_query_handler(get_hour_forecast, period_data.filter(data=['8']))
     dp.register_message_handler(handle_kiev, Text('🌃Киев'))
     dp.register_message_handler(handle_loc, Text('🏞Выберите населенный пункт'))
     dp.register_message_handler(input_city, state=FSMStates.city)

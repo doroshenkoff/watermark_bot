@@ -1,4 +1,4 @@
-import logging, json, argparse, schedule
+import logging, json, argparse, asyncio
 from aiogram import types, executor
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import Text
@@ -12,6 +12,8 @@ from watermark.watermark_handler import register_handlers_watermark
 from utils import check_words
 from config import WEBHOOK_URL, WEBAPP_PORT, production
 from astrology.astro_utils import get_horoscope
+from datetime import datetime
+from finance.finance_handler import currency_foreign
 
 logging.basicConfig(level=logging.INFO)
 dp.middleware.setup(LoggingMiddleware())
@@ -23,11 +25,8 @@ async def on_startup(dp):
     try:
         with open('static/params.json') as f:
             start_up_params = json.load(f)
-            params['vote_up'] = start_up_params['vote_up']
-            params['vote_down'] = start_up_params['vote_down']
     except:
-        params['vote_up'] = 0
-        params['vote_down'] = 0
+        pass
 
 
 async def write_changes():
@@ -36,24 +35,6 @@ async def write_changes():
             json.dump(params, f)
     except:
         pass
-
-
-async def on_shutdown(dp):
-    logging.warning('Shutting down..')
-    await write_changes()
-    await bot.delete_webhook()
-
-    await dp.storage.close()
-    await dp.storage.wait_closed()
-
-    logging.warning('Bye!')
-
-
-async def start_cmd(msg: types.Message):
-    params['chat_id'] = msg.from_user.id
-    schedule.every(30).seconds.do(send_greeting)
-    await bot.send_message(msg.from_user.id, 'Выберите что-то из пункта меню',
-                           reply_markup=KeyboardHandler.main_kb)
 
 
 async def step_back(msg: types.Message):
@@ -74,9 +55,32 @@ async def cancel_handler(msg: types.Message, state: FSMContext):
     await msg.reply('Отменяем...', reply_markup=KeyboardHandler.main_kb)
 
 
-async def send_greeting():
-    if params.get('chat_id'):
-        await bot.send_message(params['chat_id'], 'Hello, <i>Pidar</i>', parse_mode='HTML')
+async def send_quotations():
+    while params.get('flag'):
+        await asyncio.sleep(60)
+        now = datetime.now()
+        if now.hour in range(8, 24, 2) and now.minute == 0:
+            await bot.send_message(params['chat_id'], f'<b>Биржевые котировки на {now.hour}:00</b>', parse_mode='HTML')
+            await bot.send_message(params['chat_id'], currency_foreign())
+
+
+async def start_cmd(msg: types.Message):
+    params['chat_id'] = msg.from_user.id
+    params['flag'] = True
+    params['flag1'] = True
+    await bot.send_message(msg.from_user.id, 'Выберите что-то из пункта меню',
+                           reply_markup=KeyboardHandler.main_kb)
+    await send_quotations()
+
+
+
+async def stop_schedule(msg: types.Message):
+    if not params['flag']:
+        params['flag1'] = False
+    else:
+        params['flag'] = False
+    await msg.answer('Прекращаем спамить...')
+
 
 
 async def horoscope(msg: types.Message):
@@ -93,10 +97,23 @@ def register_handlers(dp: Dispatcher):
     register_handlers_finance(dp)
     register_handlers_watermark(dp)
     dp.register_message_handler(start_cmd, commands=['start'])
+    dp.register_message_handler(stop_schedule, commands=['stop'])
     dp.register_message_handler(step_back, Text('⏪Назад'))
     dp.register_message_handler(horoscope, Text('🌎Положение планет'))
     dp.register_message_handler(echo_send)
     dp.register_message_handler(cancel_handler, Text('☠Отменить'), state='*')
+
+
+async def on_shutdown(dp):
+    logging.warning('Shutting down..')
+    await write_changes()
+    await bot.delete_webhook()
+
+    await dp.storage.close()
+    await dp.storage.wait_closed()
+
+    logging.warning('Bye!')
+
 
 
 def main(production=True):
@@ -122,3 +139,5 @@ if __name__ == '__main__':
     if args.p:
         production = True
     main(production)
+
+

@@ -1,4 +1,3 @@
-from flatlib import aspects
 from flatlib import const
 from flatlib.chart import Chart
 from flatlib.datetime import Datetime

@@ -26,4 +26,7 @@ period_kb = InlineKeyboardMarkup(resize_keyboard=True).add(
     InlineKeyboardButton('7 дней', callback_data=period_data.new(data='7'))
 )
 
+hour_forecast_kb = InlineKeyboardMarkup().add\
+    (InlineKeyboardButton('Подробный прогноз', callback_data=period_data.new(data='8')))
+
 
