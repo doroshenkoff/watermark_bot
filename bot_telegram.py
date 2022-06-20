@@ -11,7 +11,7 @@ from finance.finance_handler import register_handlers_finance
 from watermark.watermark_handler import register_handlers_watermark
 from utils import check_words
 from config import WEBHOOK_URL, WEBAPP_PORT, production
-from astrology.astro_utils import get_horoscope
+from astrology.astro_utils import get_horoscope, is_via_combusta
 from datetime import datetime
 from finance.finance_handler import currency_foreign
 
@@ -62,6 +62,13 @@ async def send_quotations():
         if now.hour in range(8, 24, 2) and now.minute == 0:
             await bot.send_message(params['chat_id'], f'<b>Биржевые котировки на {now.hour}:00</b>', parse_mode='HTML')
             await bot.send_message(params['chat_id'], currency_foreign())
+        if now.minute == 0:
+            if is_via_combusta() and not params.get('via_combusta'):
+                await bot.send_message(params['chat_id'], '⚠Attention! The Moon has entered VIA COMBUSTA!💀')
+                params['via_combusta'] = True
+            elif not is_via_combusta() and params.get('via_combusta'):
+                await bot.send_message(params['chat_id'], '🌙The Moon has exited via combusta!😇')
+                params['via_combusta'] = False
 
 
 async def start_cmd(msg: types.Message):

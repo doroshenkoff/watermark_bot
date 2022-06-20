@@ -14,7 +14,7 @@ HOUSES = {1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII',
           8: 'VIII', 9: 'IX', 10: 'X', 11: 'XI', 12: 'XII'}
 
 
-HoroscopeItems = namedtuple('HoroscopeItems', 'name flatlib_name, display')
+HoroscopeItems = namedtuple('HoroscopeItems', 'name flatlib_name display')
 
 HOROSCOPE_ITEMS = [
     HoroscopeItems('sun', const.SUN, '☉ Солнце'),
@@ -70,8 +70,21 @@ def get_horoscope(position='Киев'):
         details = str(planet).split(' ')
         pos = details[2].split(":")
         out += f"{item.display}:  {ZODIAC_ITEMS.get(details[1], details[1])} {pos[0][1:]}°{pos[1]}, " \
-               f"<b>{HOUSES[house]} дом</b>\n"
+               f"<b>{HOUSES[house]} дом</b>"
+        if item.name == 'moon' and 195 <= planet.lon <= 225:
+            out += " <b>💀Via Combusta💀</b>\n"
+        else:
+            out += "\n"
     return out
+
+
+def is_via_combusta():
+    now = datetime.now()
+    date_params = now.strftime("%Y/%m/%d"), now.strftime("%H:%M"), '+03:00'
+    chart = Chart(Datetime(*date_params), GeoPos('59n42', '30w65'))
+    moon = chart.get(const.MOON)
+    return 195 <= moon.lon <= 225
+
 
 
 if __name__ == '__main__':

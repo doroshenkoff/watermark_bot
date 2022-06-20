@@ -146,3 +146,18 @@ def hourly_forecast(params: WeatherHandler):
                f'скорость ветра - {int(hour["wind_speed"])} м/с,\n\n'
     return out
 
+
+# TODO: Create alert for rain. Beginning, end and quantity in MM. Check once per hour.
+
+def get_rain_forecast(params: WeatherHandler):
+    data = _get_forecast_data('hourly', params)
+    for index, hour in enumerate(data['hourly'][:8]):
+        if hour.get('rain'):
+            count = 0
+            quant = 0
+            while data['hourly'][index+1].get('rain'):
+                count += 1
+                quant += list(data['hourly'][index+1]["rain"].values()[0])
+                index += 1
+
+
