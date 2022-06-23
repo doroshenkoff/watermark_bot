@@ -8,6 +8,7 @@ from create_bot import *
 from main_keyboard import KeyboardHandler
 from weather.weather_handler import register_handlers_weather
 from finance.finance_handler import register_handlers_finance
+from weather.weather_utils import is_rain
 from watermark.watermark_handler import register_handlers_watermark
 from utils import check_words
 from config import WEBHOOK_URL, WEBAPP_PORT, production
@@ -62,6 +63,10 @@ async def send_quotations():
         if now.hour in range(8, 24, 2) and now.minute == 0:
             await bot.send_message(params['chat_id'], f'<b>Биржевые котировки на {now.hour}:00</b>', parse_mode='HTML')
             await bot.send_message(params['chat_id'], currency_foreign())
+        if now.hour in range(5, 24, 2):
+            rain_msg = is_rain()
+            if rain_msg:
+                await bot.send_message(params['chat_id'], rain_msg)
         if now.minute == 0:
             if is_via_combusta() and not params.get('via_combusta'):
                 await bot.send_message(params['chat_id'], '⚠Attention! The Moon has entered VIA COMBUSTA!💀')

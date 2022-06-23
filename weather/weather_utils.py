@@ -10,19 +10,20 @@ from . import weather_constants as wc
 
 
 class WeatherHandler:
-    def __init__(self):
-        self.city = 'Kiev'
-        self.lat = None
-        self.lon = None
+    def __init__(self, city='Kiev', lat=None, lon=None):
+        self.city = city
+        self.lat = lat
+        self.lon = lon
 
 
 def format_time(time: int):
     return f'0{time}' if time < 10 else time
 
+
 gmaps = googlemaps.Client(config.GOOGLE_API_KEY)
 
-def get_location(params: WeatherHandler):
 
+def get_location(params: WeatherHandler):
     if params.lat is None:
         try:
             loc = gmaps.geocode(params.city)[0]['geometry']['location']
@@ -39,10 +40,10 @@ def get_air_pollution(lat, lon):
         data = requests.get('http://api.openweathermap.org/data/2.5/air_pollution',
                             params={'lat': lat,
                                     'lon': lon,
-                                    'appid': config.WEATHER_TOKEN})\
-                            .json()
+                                    'appid': config.WEATHER_TOKEN}) \
+            .json()
         index = data['list'][0]['main']['aqi']
-        return ''.join('★' if i < 6-index else '✩' for i in range(5))
+        return ''.join('★' if i < 6 - index else '✩' for i in range(5))
     except:
         return 'нет данных'
 
@@ -112,7 +113,7 @@ def weather_forecast(params: WeatherHandler):
     for day in data['daily']:
         sunrise = datetime.fromtimestamp(day['sunrise'] + data['timezone_offset'] - config.timezone)
         sunset = datetime.fromtimestamp(day['sunset'] + data['timezone_offset'] - config.timezone)
-        day_light = str(sunset-sunrise).split(':')
+        day_light = str(sunset - sunrise).split(':')
         s = f"<b><i>{datetime.fromtimestamp(day['dt']).strftime('%a, %d.%m')}</i></b>\n"
         s += f'фаза луны - {wc.MOON_PHASES[int(day["moon_phase"] / 0.125)]}\n'
         s += f'🌅 рассвет - {format_time(sunrise.hour)}:{format_time(sunrise.minute)}\n'
@@ -147,6 +148,24 @@ def hourly_forecast(params: WeatherHandler):
     return out
 
 
+def is_rain(params=WeatherHandler('Kiev')):
+    data = _get_forecast_data('hourly', params)
+    rain = False
+    long = 0
+    mm = 0
+    for index, item in enumerate(data):
+        if index == 5 and not rain:
+            return 'No rain in nearest 5 hours'
+        if item.get('rain'):
+            if not rain:
+                hour = datetime.fromtimestamp(item['dt']).strftime('%H:%M')
+                rain = True
+            long += 1
+            mm += list(item["rain"].values())[0]
+        elif rain:
+            return f'Внимание! в {hour} начнется дождь! Ожидается {mm} осадков и он продлится {long} часа(ов)'
+
+
 # TODO: Create alert for rain. Beginning, end and quantity in MM. Check once per hour.
 
 def get_rain_forecast(params: WeatherHandler):
@@ -155,9 +174,7 @@ def get_rain_forecast(params: WeatherHandler):
         if hour.get('rain'):
             count = 0
             quant = 0
-            while data['hourly'][index+1].get('rain'):
+            while data['hourly'][index + 1].get('rain'):
                 count += 1
-                quant += list(data['hourly'][index+1]["rain"].values()[0])
+                quant += list(data['hourly'][index + 1]["rain"].values()[0])
                 index += 1
-
-
